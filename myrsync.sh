@@ -30,39 +30,51 @@ regex2="s/^$DIR2/$DIR1/g"
 for contDIR1 in $contenuDIR1
 do
 	testContDIR2=$(sed -e "$regex1" <<< $contDIR1)
-	if [ -f $testContDIR2 ] || [ -d $testContDIR2 ]
+	if [ -d $contDIR1 ] && [ ! -d $testContDIR2 ]
 	then
-		echo "$contDIR1 et $testContDIR2"
-		if [ $contDIR1 -nt $testContDIR2 ]
+		mkdir -p $testContDIR2
+	elif [ -f $contDIR1 ]
+	then
+		if [ ! -f $testContDIR2 ]
 		then
-			rm -r $testContDIR2
-			cp -r $contDIR1 $testContDIR2
-		elif [ $contDIR1 -ot $testContDIR2 ]
+			cp $contDIR1 $testContDIR2
+		elif [ -f $testContDIR2 ]
 		then
-			rm -r $contDIR1
-			cp -r $testContDIR2 $contDIR1
+			if [ $testContDIR2 -ot $contDIR1 ]
+			then
+				rm $testContDIR2
+				cp $contDIR1 $testContDIR2
+			elif [ ! $testContDIR2 -ot $contDIR1 ]
+			then
+				rm $contDIR1
+				cp $testContDIR2 $contDIR1
+			fi
 		fi
-	else
-		cp -r $contDIR1 $testContDIR2
 	fi
 done
 
 for contDIR2 in $contenuDIR2
 do
-	testContDIR1=$(sed -e "$regex2" <<< $contDIR1)
-	if [ -f $testContDIR1 ] || [ -d $testContDIR1 ]
+	testContDIR1=$(sed -e "$regex2" <<< $contDIR2)
+	if [ -d $contDIR2 ] && [ ! -d $testContDIR1 ]
 	then
-		echo "$contDIR2 et $testContDIR1"
-		if [ $contDIR2 -nt $testContDIR1 ]
+		mkdir -p $testContDIR1
+	elif [ -f $contDIR2 ]
+	then
+		if [ ! -f $testContDIR1 ]
 		then
-			rm -r $testContDIR1
-			cp -r $contDIR2 $testContDIR1
-		elif [ $contDIR2 -ot $testContDIR1 ]
+			cp $contDIR2 $testContDIR1
+		elif [ -f $testContDIR1 ]
 		then
-			rm -r $contDIR2
-			cp -r $testContDIR1 $contDIR2
+			if [ $testContDIR1 -ot $contDIR2 ]
+			then
+				rm $testContDIR1
+				cp $contDIR2 $testContDIR1
+			elif [ ! $testContDIR1 -ot $contDIR2 ]
+			then
+				rm $contDIR2
+				cp $testContDIR1 $contDIR2
+			fi
 		fi
-	else
-		cp -r $contDIR2 $testContDIR1
 	fi
 done
