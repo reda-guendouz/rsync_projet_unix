@@ -2,19 +2,32 @@
 
 #Test des arguements donné en parametres
 
-if [ $# -ne 2 ]
+if [ $# -eq 2 ]
 then
-	echo "ERROR: Pas le bon nombre d'argument"
-	exit 1 #code erreur pour un mauvais nombre d'argument
-else
 	if [ ! -d "$1" ] || [ ! -d "$2" ]
 	then
 		echo "ERROR: Un des arguments n'est pas un repertoire"
-		exit 2 #code erreur si arguments n'est pas un repertoire
+		exit 1 #code erreur si arguments n'est pas un repertoire
 	else
 		DIR1=$(sed -e 's/\/$//g' <<< "$1")
 		DIR2=$(sed -e 's/\/$//g' <<< "$2")
+		option=false
 	fi
+elif [ $# -eq 3 ]
+then
+	if [ ! -d "$2" ] || [ ! -d "$3" ] || [ ! "$1" = "-r" ]
+	then
+		echo "ERROR: Un des arguments n'est pas un repertoire ou mauvaise option"
+		exit 2 #code erreur si arguments n'est pas un repertoire
+	else
+		DIR1=$(sed -e 's/\/$//g' <<< "$2")
+		DIR2=$(sed -e 's/\/$//g' <<< "$3")
+		option=true
+	fi
+else
+	echo "ERROR: Pas les bons arguments"
+	exit 3 #code erreur pour un mauvais nombre d'argument
+	
 fi
 
 #Parcours de repertoire
@@ -45,18 +58,28 @@ regex2="s/^$DIR2/$DIR1/g"   #on cree une regex pour tester l'existence des fichi
 #
 #Et inversement
 
-function parcours_repertoire() {
+function parcours_repertoire_sync() {
 	for fileDirA in $1						  #On parcourt l'arborescence de a 
 	do
 		fileDirB=$(sed -e "$2" <<< "$fileDirA")
 		if [ -d "$fileDirA" ] && [ ! -d "$fileDirB" ] 		  #Si c'est un repertoire dans a mais qu'il n'existe pas dans b
 		then
-			mkdir -p "$fileDirB"               		  #Alors on cree le repertoire dans b
+			if [ "$option" = "true" ]
+			then
+				rm -rf "$fileDirA"
+			else
+				mkdir -p "$fileDirB"   			  #Alors on cree le repertoire dans b
+			fi
 		elif [ -f "$fileDirA" ]					  #Si c'est un fichier dans a
 		then
 			if [ ! -f "$fileDirB" ]	                          #Si il n'existe pas dans b
 			then
-				cp "$fileDirA" "$fileDirB"		  #Alors on cree le fichier dans b	
+				if [ "$option" = "true" ]
+				then
+					rm "$fileDirA"
+				else	
+					cp "$fileDirA" "$fileDirB"		  #Alors on cree le fichier dans b	
+				fi
 			elif [ -f "$fileDirB" ]				  #Si le fichier existe dans b
 			then
 				if [ "$fileDirB" -ot "$fileDirA" ]        #Si le fichier dans a est plus recent
@@ -72,5 +95,6 @@ function parcours_repertoire() {
 	done
 }
 
-parcours_repertoire "$contenuDIR1" "$regex1"
-parcours_repertoire "$contenuDIR2" "$regex2"
+
+parcours_repertoire_sync "$contenuDIR1" "$regex1" "$option"
+parcours_repertoire_sync "$contenuDIR2" "$regex2" "$option"
